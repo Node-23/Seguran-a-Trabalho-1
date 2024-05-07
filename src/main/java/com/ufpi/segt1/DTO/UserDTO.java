@@ -2,10 +2,10 @@ package com.ufpi.segt1.DTO;
 
 import java.io.Serializable;
 
-public record KeyDTO(
+public record UserDTO(
         Long id,
-        Long ownerId,
         String name,
-        String fileUrl,
+        String username,
+        String email,
         String password
 ) implements Serializable {}
