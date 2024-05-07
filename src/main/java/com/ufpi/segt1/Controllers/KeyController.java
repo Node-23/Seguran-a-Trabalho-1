@@ -2,6 +2,7 @@ package com.ufpi.segt1.Controllers;
 
 import com.ufpi.segt1.DTO.KeyDTO;
 import com.ufpi.segt1.Models.Key;
+import com.ufpi.segt1.Services.KeyManagementService;
 import com.ufpi.segt1.Services.KeyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +15,11 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class KeyController {
     private final KeyService keyService;
+    private final KeyManagementService keyManagementService;
 
-    public KeyController(KeyService service) {
+    public KeyController(KeyService service, KeyManagementService keyManagementService) {
         this.keyService = service;
+        this.keyManagementService = keyManagementService;
     }
 
     @GetMapping
@@ -50,6 +53,24 @@ public class KeyController {
     public ResponseEntity<Void> deleteKeyById(@PathVariable("id") Long id) {
         this.keyService.deleteKeyById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/pair")
+    public ResponseEntity<String> createPair(){
+        keyManagementService.CreateKeyPair();
+        return new ResponseEntity<>("Key pair generated and uploaded to S3 successfully!", HttpStatus.OK);
+    }
+
+    @PostMapping("/encrypt")
+    public ResponseEntity<String> encryptMessage(@RequestBody String message){
+        String msg = keyManagementService.EncryptMessage(message);
+        return new ResponseEntity<>(msg, HttpStatus.OK);
+    }
+
+    @PostMapping("/decrypt")
+    public ResponseEntity<String> decryptMessage(@RequestBody String encryptedMessage){
+        String msg = keyManagementService.DecryptMessage(encryptedMessage);
+        return new ResponseEntity<>(msg, HttpStatus.OK);
     }
 
     //TODO: Import key from file
