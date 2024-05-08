@@ -1,9 +1,8 @@
 package com.ufpi.segt1.Services;
 
 import com.ufpi.segt1.DTO.KeyDTO;
-import com.ufpi.segt1.Exceptions.FieldAlreadyInUseException;
-import com.ufpi.segt1.Exceptions.KeyNotFoundException;
-import com.ufpi.segt1.Exceptions.PasswordRulesException;
+import com.ufpi.segt1.DTO.SecurityDTO;
+import com.ufpi.segt1.Exceptions.*;
 import com.ufpi.segt1.Infra.S3Management;
 import com.ufpi.segt1.Models.Key;
 import com.ufpi.segt1.Repositories.KeyRepository;
@@ -118,6 +117,19 @@ public class KeyService {
             return updatedKey;
         } else {
             return null;
+        }
+    }
+
+    public Key verifyPassword(SecurityDTO securityDTO){
+        try {
+            Key key = findKeyById(securityDTO.keyId());
+            if(GeneralService.encryptPasswords(securityDTO.password()).equals(key.getPassword())){
+                return key;
+            }else{
+                throw new PairPasswordException();
+            }
+        } catch (Exception e) {
+            throw new PairPasswordException();
         }
     }
 }

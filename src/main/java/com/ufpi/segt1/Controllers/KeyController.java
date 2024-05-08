@@ -1,6 +1,7 @@
 package com.ufpi.segt1.Controllers;
 
 import com.ufpi.segt1.DTO.KeyDTO;
+import com.ufpi.segt1.DTO.SecurityDTO;
 import com.ufpi.segt1.Models.Key;
 import com.ufpi.segt1.Services.KeyManagementService;
 import com.ufpi.segt1.Services.KeyService;
@@ -57,14 +58,14 @@ public class KeyController {
     }
 
     @PostMapping("/encrypt")
-    public ResponseEntity<String> encryptMessage(@RequestBody String message){
-        String msg = keyManagementService.EncryptMessage(message);
+    public ResponseEntity<String> encryptMessage(@RequestBody SecurityDTO securityDTO){
+        String msg = keyManagementService.EncryptMessage(securityDTO);
         return new ResponseEntity<>(msg, HttpStatus.OK);
     }
 
     @PostMapping("/decrypt")
-    public ResponseEntity<String> decryptMessage(@RequestBody String encryptedMessage){
-        String msg = keyManagementService.DecryptMessage(encryptedMessage);
+    public ResponseEntity<String> decryptMessage(@RequestBody SecurityDTO securityDTO){
+        String msg = keyManagementService.DecryptMessage(securityDTO);
         return new ResponseEntity<>(msg, HttpStatus.OK);
     }
 

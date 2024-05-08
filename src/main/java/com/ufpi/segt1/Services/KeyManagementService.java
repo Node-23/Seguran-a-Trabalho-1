@@ -1,5 +1,6 @@
 package com.ufpi.segt1.Services;
 
+import com.ufpi.segt1.DTO.SecurityDTO;
 import com.ufpi.segt1.Infra.S3Management;
 import com.ufpi.segt1.Models.Key;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -53,9 +54,10 @@ public class KeyManagementService {
         }
     }
 
-    public String EncryptMessage(String message) {
+    public String EncryptMessage(SecurityDTO securityDTO) {
+        Key key = keyService.verifyPassword(securityDTO);
         try {
-            byte[] encryptedMessage = encrypt(message);
+            byte[] encryptedMessage = encrypt(securityDTO.message(), key.getName()+publicKeySufix);
             return Base64.getEncoder().encodeToString(encryptedMessage);
         } catch (Exception e) {
             e.printStackTrace();
@@ -63,10 +65,10 @@ public class KeyManagementService {
         }
     }
 
-    private byte[] encrypt(String message) throws Exception {
+    private byte[] encrypt(String message, String keyName) throws Exception {
         PublicKey publicKey = null;
         try{
-            publicKey = s3Management.readPublicKeyFromS3("public_key.pem");
+            publicKey = s3Management.readPublicKeyFromS3(keyName);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -75,10 +77,11 @@ public class KeyManagementService {
         return cipher.doFinal(message.getBytes("UTF-8"));
     }
 
-    public String DecryptMessage(String encryptedMessage){
+    public String DecryptMessage(SecurityDTO securityDTO){
+        Key key = keyService.verifyPassword(securityDTO);
         try {
-            PrivateKey privateKey = s3Management.readPrivateKeyFromS3("private_key.pem");
-            byte[] encryptedBytes = Base64.getDecoder().decode(encryptedMessage);
+            PrivateKey privateKey = s3Management.readPrivateKeyFromS3(key.getName()+privateKeySufix);
+            byte[] encryptedBytes = Base64.getDecoder().decode(securityDTO.message());
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
