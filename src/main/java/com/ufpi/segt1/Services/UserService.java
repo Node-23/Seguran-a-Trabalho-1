@@ -25,9 +25,6 @@ import java.util.regex.Pattern;
 @Service
 public class UserService {
     private final UserRepository repository;
-    private static final String AES_ALGORITHM = "AES";
-    private static final String KEY = "KEY_DE_TESTE";
-
     public UserService(UserRepository repository) {
         this.repository = repository;
     }
@@ -49,7 +46,7 @@ public class UserService {
     private void SaveUser(User user){
         ValidateUser(user);
         try{
-            user.setPassword(encrypt(user.getPassword()));
+            user.setPassword(GeneralService.encryptPasswords(user.getPassword()));
             this.repository.save(user);
         }catch (DataIntegrityViolationException ex){
             String constrainField = GeneralService.getConstrainField(ex);
@@ -111,7 +108,7 @@ public class UserService {
     public User Login(LoginDTO loginDTO){
         try {
             User user = findUserByEmail(loginDTO.email());
-            if(encrypt(loginDTO.password()).equals(user.getPassword())){
+            if(GeneralService.encryptPasswords(loginDTO.password()).equals(user.getPassword())){
                 return user;
             }else{
                 throw new LoginIncorrectDataException();
@@ -123,15 +120,6 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return this.repository.findAll();
-    }
-
-    public static String encrypt(String plaintext) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        byte[] keyBytes = Arrays.copyOf(KEY.getBytes(), 16);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, AES_ALGORITHM);
-        Cipher cipher = Cipher.getInstance(AES_ALGORITHM);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-        byte[] encryptedBytes = cipher.doFinal(plaintext.getBytes());
-        return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
     public void deleteUserById(Long id) {

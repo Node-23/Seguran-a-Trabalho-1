@@ -5,10 +5,7 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.*;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -60,10 +57,21 @@ public class S3Management {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(contentBytes.length);
             s3Client.putObject(new PutObjectRequest(bucketName, keyName, inputStream, metadata));
-            System.out.println("String content uploaded successfully to S3!");
         } catch (SdkClientException e) {
             e.printStackTrace();
         }
+    }
+
+    public void renameObject(String oldKeyName, String newKeyName) {
+        CopyObjectRequest copyRequest = new CopyObjectRequest(bucketName, oldKeyName, bucketName, newKeyName);
+        s3Client.copyObject(copyRequest);
+        DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucketName, oldKeyName);
+        s3Client.deleteObject(deleteRequest);
+    }
+
+    public void deleteObject(String keyName) {
+        DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucketName, keyName);
+        s3Client.deleteObject(deleteRequest);
     }
 
     public PublicKey readPublicKeyFromS3(String keyName) throws IOException {

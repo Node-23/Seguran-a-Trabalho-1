@@ -4,20 +4,12 @@ import com.ufpi.segt1.DTO.KeyDTO;
 import com.ufpi.segt1.Exceptions.FieldAlreadyInUseException;
 import com.ufpi.segt1.Exceptions.KeyNotFoundException;
 import com.ufpi.segt1.Exceptions.PasswordRulesException;
+import com.ufpi.segt1.Infra.S3Management;
 import com.ufpi.segt1.Models.Key;
 import com.ufpi.segt1.Repositories.KeyRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -27,12 +19,12 @@ import java.util.regex.Pattern;
 public class KeyService {
     private final KeyRepository repository;
     private final UserService userService;
-    private static final String AES_ALGORITHM = "AES";
-    private static final String KEY = "KEY_DE_TESTE";
+    private final S3Management s3Management;
 
-    public KeyService(KeyRepository repository, UserService userService) {
+    public KeyService(KeyRepository repository, UserService userService, S3Management s3Management) {
         this.repository = repository;
         this.userService = userService;
+        this.s3Management = s3Management;
     }
 
     public List<Key> getAllKeys() {
@@ -51,7 +43,7 @@ public class KeyService {
     private void SaveKey(Key key){
         ValidatePassword(key.getPassword());
         try {
-            key.setPassword(encrypt(key.getPassword()));
+            key.setPassword(GeneralService.encryptPasswords(key.getPassword()));
             this.repository.save(key);
         }catch (DataIntegrityViolationException ex){
             String constrainField = GeneralService.getConstrainField(ex);
@@ -100,19 +92,13 @@ public class KeyService {
         return false;
     }
 
-    public static String encrypt(String plaintext) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        byte[] keyBytes = Arrays.copyOf(KEY.getBytes(), 16);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, AES_ALGORITHM);
-        Cipher cipher = Cipher.getInstance(AES_ALGORITHM);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-        byte[] encryptedBytes = cipher.doFinal(plaintext.getBytes());
-        return Base64.getEncoder().encodeToString(encryptedBytes);
-    }
-
     public void deleteKeyById(Long id) {
         Optional<Key> keyOptional = this.repository.findById(id);
         if (keyOptional.isPresent()) {
+            String name = keyOptional.get().getName();
             this.repository.deleteById(id);
+            s3Management.deleteObject(name+KeyManagementService.privateKeySufix);
+            s3Management.deleteObject(name+KeyManagementService.publicKeySufix);
         }else{
             throw new KeyNotFoundException();
         }
@@ -121,12 +107,15 @@ public class KeyService {
     public Key updateKey(Long id, KeyDTO keyDTO) {
         Optional<Key> keyOptional = this.repository.findById(id);
         if (keyOptional.isPresent()) {
+            String oldName = keyOptional.get().getName();
             Key key = keyOptional.get();
-            key.setId(keyDTO.id());
             key.setName(keyDTO.name());
             key.setFileUrl(keyDTO.fileUrl());
             key.setPassword(keyDTO.password());
-            return this.repository.save(key);
+            Key updatedKey =  this.repository.save(key);
+            s3Management.renameObject(oldName+KeyManagementService.privateKeySufix, key.getName()+KeyManagementService.privateKeySufix);
+            s3Management.renameObject(oldName+KeyManagementService.publicKeySufix, key.getName()+KeyManagementService.publicKeySufix);
+            return updatedKey;
         } else {
             return null;
         }

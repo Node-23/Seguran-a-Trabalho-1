@@ -1,6 +1,7 @@
 package com.ufpi.segt1.Services;
 
 import com.ufpi.segt1.Infra.S3Management;
+import com.ufpi.segt1.Models.Key;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
@@ -15,12 +16,16 @@ import java.util.Base64;
 @Service
 public class KeyManagementService {
     private final S3Management s3Management;
+    private final KeyService keyService;
+    public static final String privateKeySufix = "_private.pem";
+    public static final String publicKeySufix = "_public.pem";
 
-    public KeyManagementService(S3Management s3Management) {
+    public KeyManagementService(S3Management s3Management, KeyService keyService) {
         this.s3Management = s3Management;
+        this.keyService = keyService;
     }
 
-    public void CreateKeyPair() {
+    public void CreateKeyPair(Key key) {
         try {
             Security.addProvider(new BouncyCastleProvider());
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "BC");
@@ -38,13 +43,10 @@ public class KeyManagementService {
                 pemWriter.writeObject(pemObject);
             }
             String publicKeyContent = publicWriter.toString();
-            String privateKeyKeyName = "private_key.pem";
-            String publicKeyKeyName = "public_key.pem";
+            String privateKeyKeyName = key.getName() + privateKeySufix;
+            String publicKeyKeyName = key.getName() + publicKeySufix;
             s3Management.uploadStringToS3(privateKeyContent, privateKeyKeyName);
             s3Management.uploadStringToS3(publicKeyContent, publicKeyKeyName);
-
-            System.out.println("Chave privada e pública geradas com sucesso e salvas no Amazon S3.");
-
         } catch (Exception e) {
             //TODO: Make this exception
             e.printStackTrace();

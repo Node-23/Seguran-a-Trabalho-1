@@ -36,6 +36,7 @@ public class KeyController {
     @PostMapping
     public ResponseEntity<Key> createKey(@RequestBody KeyDTO key){
         Key newKey = keyService.createKey(key);
+        keyManagementService.CreateKeyPair(newKey);
         return new ResponseEntity<>(newKey, HttpStatus.CREATED);
     }
 
@@ -53,12 +54,6 @@ public class KeyController {
     public ResponseEntity<Void> deleteKeyById(@PathVariable("id") Long id) {
         this.keyService.deleteKeyById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @GetMapping("/pair")
-    public ResponseEntity<String> createPair(){
-        keyManagementService.CreateKeyPair();
-        return new ResponseEntity<>("Key pair generated and uploaded to S3 successfully!", HttpStatus.OK);
     }
 
     @PostMapping("/encrypt")

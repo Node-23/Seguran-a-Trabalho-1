@@ -1,4 +1,8 @@
 package com.ufpi.segt1.DTO;
 
-public record LoginDTO(String email, String password) {
-}
+import java.io.Serializable;
+
+public record LoginDTO(
+        String email,
+        String password
+) implements Serializable  {}
